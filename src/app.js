@@ -1,12 +1,12 @@
-
 const leftScoreHTML = "left-score";
 const rightScoreHTML = "right-score";
+const winnerHTML = "who-won";
 
 const WIDTH = 900;
 const HEIGHT = 600;
 
 const TOP = 0;
-const BOTTOM = HEIGHT;
+const BOTTOM = HEIGHT - 20;
 
 const LEFTSCOREZONE = 100;
 const RIGHTSCOREZONE = 800;
@@ -21,65 +21,56 @@ function drawMidline(obj)//draws the mid court line takes an obj that has the wi
     }
 }
 
-
-function PaddleObject(Width, Height, posx, posy)
-{
-    let width = Width;
-    let height = Height;
-    let posX = posx;
-    let posY = posy;
+function Paddle(posX, posY)
+{   
+    let initPos = {x:posX, y:posY};
+    let pos = {x: posX, y: posY};
 
     this.draw = function()
     {
-        rect(posX, posY, width, height);
-    } 
+        rect(pos.x, pos.y, 10, 60);
+    }
 
-    this.updatePos = function(posx, posy)
+    this.moveUp = function()
     {
-        posX = posx;
-        posY = posy;
+        if(pos.y - 5 > TOP) pos.y+= -5;
+    }
+    this.moveDown = function()
+    {
+        if(pos.y + 65 < HEIGHT) pos.y+= 5;
     }
 
     this.getPos = function()
     {
-        return {x: posX, y: posY};
-        
+        return pos;
     }
-
     this.getSize = function()
     {
-        return{x:width, y:height};
+        return {x: 10, y: 60}
     }
 
+    this.reset = function()
+    {
+        pos.x = initPos.x;
+        pos.y = initPos.y;
+    }
 }
 
-function BallObject(Size, X, Y)
+function Ball(Size)
 {
     let size = Size;
-    let pos = {x:X, y:Y};
-    let speed = 10;
+    let pos = {x:WIDTH/2,y:HEIGHT/2 }
 
-    let velocity = {x: 0, y:0};//commiting crimes in both direction and magnitude
-    velocity.x = Math.random(-speed, speed);
+    const speed = 2;
+    let velocity = {x: 0, y: 0}
+    velocity.x = speed;
     velocity.y = Math.random(-speed, speed);
+    console.log(velocity);
+
 
     this.draw = function()
     {
         square(pos.x, pos.y, size);
-    }
-
-    function checkBounceOffWall()
-    {
-        if(pos.y > BOTTOM) velocity.y = -velocity.y;
-        if(pos.y < TOP) velocity.y = -velocity.y;
-    }
-
-    function isScoring()//is the ball in either of the scoring bounds || -1: no, 0: left has scored, 1: right has scored
-    {
-        if(pos.x < LEFTSCOREZONE) return 1;
-        if(pos.x > RIGHTSCOREZONE) return 0;
-        return -1;
-
     }
 
     function isCol(objPos, objSize)
@@ -91,80 +82,133 @@ function BallObject(Size, X, Y)
     {
         if(isCol(left.getPos(), left.getSize()))
         {
-            let yIntersect = (left.getPos().y - pos.y) / (left.getSize().y/2);
-
-            let bounce = Math.map(yIntersect, 1, 1, 5 * PI/12, -5/12);
-
-
-
-            velocity.x =  -speed* Math.cos(bounce);
-            velocity.y =  -speed* Math.sin(bounce);
-
-            pos.x = left.getPos().x - size/2 - left.getSize().x/2 - 1;
+            pos.x += 10;
+            velocity.x = -velocity.x;
         }
         else if(isCol(right.getPos(), right.getSize()))
         {
-            let yIntersect = (right.getPos().y - pos.y) / (right.getSize().y/2);
-
-            let bounce = Math.map(yIntersect, 1, 1, 5 * PI/12, -5/12);
-
-
-
-            velocity.x =  -speed* Math.cos(bounce);
-            velocity.y =  -speed* Math.sin(bounce);
-
-            pos.x = right.getPos().x - size/2 - right.getSize().x/2 - 1;
+            pos.x -= 10;
+            velocity.x = -velocity.x;
         }
     }
 
-    this.update = function(onScore)
+    this.getPos = function()
     {
-        pos.x+= velocity.x;
-        pos.y+= velocity.y;
-        checkBounceOffWall();
-        let hasScore = isScoring();
-        if(hasScore != -1) onScore(hasScore);
-        
+        return pos;
     }
 
+    function checkBounceOffWall()
+    {
+        if(pos.y > BOTTOM) velocity.y = -velocity.y;
+        if(pos.y < TOP) velocity.y = -velocity.y;
+    }
+
+    this.reset = function()
+    {
+        pos.x = WIDTH/2;
+        pos.y = HEIGHT/2;
+        velocity.x = speed;
+        velocity.y = Math.random(-speed, speed)*2;
+    }
+
+    this.update = function()
+    {
+        pos.x+=velocity.x;
+        pos.y+=velocity.y;
+        checkBounceOffWall();
+    }
+    
 }
 
-let EventArray = [];
 
-let paddleLeft = new PaddleObject(10, 60, 150, 240);
-let paddleRight = new PaddleObject(10, 60, 750, 240);
-let ball = new BallObject(10, WIDTH/2, HEIGHT/2);
-
-
-function updateGame()
+function Game()
 {
-    drawMidline();
+    const leftPaddle = new Paddle(150, 240);
+    const rightPaddle = new Paddle(750, 240);
+    const ball = new Ball(10);
 
-    ball.update();
-    ball.checkCollision(paddleLeft, paddleRight);
-    ball.draw();
+    let leftScore = 0;
+    let rightScore = 0;
 
-    paddleLeft.update();
-    paddleLeft.draw();
+    function reset()
+    {
+        document.getElementById(leftScoreHTML).innerHTML = leftScore;
+        document.getElementById(rightScoreHTML).innerHTML = rightScore;
+        leftPaddle.reset();
+        rightPaddle.reset();
+        ball.reset();
+    }
 
-    paddleRight.update();
-    paddleRight.draw();
+    function hasScored()
+    {
+        if(ball.getPos().x > RIGHTSCOREZONE)
+        {
+            leftScore++;
+            reset();
+        }
+        if(ball.getPos().x  < LEFTSCOREZONE)
+        {
+            rightScore++;
+            reset();
+        }
+    }
+    
+    function checkPlayerInputs()
+    {
+        if(keyIsDown(UP_ARROW))
+        {
+            rightPaddle.moveUp();
+        }
+        else if(keyIsDown(DOWN_ARROW))
+        {
+            rightPaddle.moveDown();
+        }
+        else if(keyIsDown(87))
+        {
+            leftPaddle.moveUp();
+        }
+        else if(keyIsDown(83))
+        {
+            leftPaddle.moveDown();
+        }
+    }
+    this.update = function()
+    {
+        hasScored();
+        if(leftScore === 10)
+        {
+            reset();
+            document.getElementById(winnerHTML).innerHTML = "Player 1 has won the game!";
+        }
+        if(rightScore === 10)
+        {
+            reset();
+            document.getElementById(winnerHTML).innerHTML = "Player 2 has won the game!";
+        }
+
+        checkPlayerInputs();
+        drawMidline({x:WIDTH, y:HEIGHT});
+
+        ball.update();
+        ball.checkCollision(leftPaddle, rightPaddle);
+        ball.draw();
+
+        leftPaddle.draw();
+        rightPaddle.draw();
+        
+        
+    }
 }
 
+let game = new Game();
 
-
-
-function setup()//this is the p5.js setup function || we don't really have to use this other than to setup the rendering object; we can initialize and use objects created outside of this function in the draw() function
+function setup()
 {
     createCanvas(900, 600);
 }
 
-function draw()//this is the p5.js update function and game loop || this is where all game objects are drawn and the code to calc collision and handle user input are called
+function draw()
 {
-    background(3);
-    drawMidline({x:900, y:600});
-    paddleLeft.draw();
-    paddleRight.draw();
-    ball.draw();
-    
+    background(0);
+    game.update();
 }
