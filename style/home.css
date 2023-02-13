@@ -1,0 +1,40 @@
+main{
+    position:relative;
+}
+
+#left-score
+{
+    position: absolute;
+    color:white;
+    top: 150px;
+    left:340px;
+    transform: translateY(-50%);
+    font-size: 48px;
+    font-weight: bold;
+    margin: 0 20px;
+    text-align: center;
+} 
+#right-score {
+    position: absolute;
+    color:white;
+    top: 150px;
+    left:500px;
+    transform: translateY(-50%);
+    font-size: 48px;
+    font-weight: bold;
+    margin: 0 20px;
+    text-align: center;
+  }
+  
+  #who-won
+  {
+    color:white;
+    position:absolute;
+    left:300px;
+    top: 250px;
+
+  }
+
+  #defaultCanvas0 {
+    z-index: -1;
+  }
